@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>LaTeX Previewer – офлайн‑редактор</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --bg: #f8fafc;
+  --surface: #fff;
+  --border: #e2e8f0;
+  --text: #1e2937;
+  --muted: #64748b;
+  --success: #10b981;
+  --error: #b91c1c;
+  --radius: 12px;
+  --transition: 0.2s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+header {
+  background: var(--surface);
+  border-bottom: 2px solid var(--border);
+  padding: 1rem 1.5rem;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+  z-index:10;
+}
+.logo {font-size:1.4rem; display:flex; align-items:center; gap:.75rem; color:var(--primary);}
+.logo::before{content:"📐"; font-size:1.5rem;}
+.header-title{font-size:1rem; font-weight:600; color:var(--text);}
+
+.main {flex:1; display:flex; min-height:0;}
+.panel-left{width:25%; min-width:320px; background:var(--surface); border-right:2px solid var(--border); display:flex; flex-direction:column;}
+.panel-header{padding:1.25rem 1.5rem 1rem; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:.75rem;}
+.panel-header h1{font-size:1.125rem; font-weight:600; color:var(--text);}
+
+.textarea-container{flex:1; display:flex; flex-direction:column; padding:0 1.5rem 1.5rem;}
+#input{
+  flex:1;
+  width:100%;
+  padding:1.25rem;
+  font-family:"Fira Code", Menlo, monospace;
+  font-size:1rem;
+  line-height:1.6;
+  border:2px solid var(--border);
+  border-radius:var(--radius);
+  resize:none;
+  outline:none;
+  transition:border-color var(--transition);
+  background:#fafbfc;
+  color:var(--text);
+}
+#input:focus{border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,.15);}
+
+.controls{margin-top:1rem; display:flex; gap:.75rem; align-items:center;}
+.btn-preview{
+  flex:1;
+  background:var(--primary);
+  color:#fff;
+  border:none;
+  padding:.875rem 1.75rem;
+  font-size:1rem;
+  font-weight:600;
+  border-radius:var(--radius);
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:.5rem;
+  transition:all var(--transition);
+}
+.btn-preview:hover{background:var(--primary-hover); transform:translateY(-2px); box-shadow:0 10px 15px -3px rgba(37,99,235,.3);}
+.btn-preview:active{transform:scale(.98);}
+
+.shortcut{font-size:.875rem; color:var(--muted); background:#f1f5f9; padding:.25rem .75rem; border-radius:6px; font-family:monospace;}
+
+.panel-right{flex:1; display:flex; flex-direction:column; min-width:0; background:var(--bg);}
+.preview-header{padding:1.25rem 2rem 1rem; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between;}
+.preview-header h1{font-size:1.125rem; font-weight:600; color:var(--text);}
+.preview-container{flex:1; padding:2rem; overflow:auto; background:var(--bg);}
+#preview{background:var(--surface); max-width:820px; margin:auto; padding:3rem 4rem; border-radius:var(--radius); box-shadow:0 25px 50px -12px rgba(0,0,0,.15); min-height:100%; font-size:1.0625rem; line-height:1.7; color:var(--text); border:1px solid var(--border);}
+#preview p{margin-bottom:1.2em;}
+
+.status{font-size:.875rem; padding:.25rem .75rem; background:#ecfdf5; color:var(--success); border-radius:9999px; display:inline-flex; align-items:center; gap:.25rem;}
+.empty-state{height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--muted); text-align:center; padding:2.5rem;}
+.empty-state h3{font-size:1.125rem; margin-bottom:.5rem;}
+.empty-state p{max-width:280px; line-height:1.4;}
+.footer{position:absolute; bottom:.75rem; right:1.5rem; font-size:.75rem; color:var(--muted); display:flex; align-items:center; gap:.5rem;}
+</style>
+
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    processEnvironments: true,
+    packages: { '[+]': ['ams'] }
+  },
+  svg: { scale: 1.05 },
+  chtml: { scale: 1.05, displayAlign: 'center', displayIndent: '0em' },
+  loader: { load: ['[tex]/ams'] }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+<header>
+  <div class="logo">LaTeX Previewer</div>
+  <div class="header-title"></div>
+  <div style="display:flex; align-items:center; gap:1rem;">
+    <div class="status"><span style="display:inline-block;width:.5rem;height:.5rem;background:var(--success);border-radius:50%;"></span>🗑️ Clear holst ➝</div>
+    <button onclick="clearInput()" style="background:none;border:2px solid var(--border);color:var(--muted);padding:.5rem 1rem;border-radius:.5rem;font-size:.875rem;cursor:pointer;">Delete 🟥</button>
+  </div>
+</header>
+
+<div class="main">
+  <!-- Левая панель -->
+  <div class="panel-left">
+    <div class="panel-header">
+      <h1>1. Paste Text in LaTeX</h1>
+      <span style="margin-left:auto;font-size:.875rem;background:#f1f5f9;padding:.25rem .75rem;border-radius:9999px;color:var(--muted);">Ctrl+V</span>
+    </div>
+
+    <div class="textarea-container">
+      <textarea id="input" spellcheck="false" placeholder="Вставьте LaTeX‑код и текст (русский/английский). Например:
+Привет, мир!
+$E=mc^2$
+\\[\\int_{0}^{\\infty}e^{-x^2}dx=\\frac{\\sqrt{\\pi}}{2}\\]"></textarea>
+
+      <div class="controls">
+        <button class="btn-preview" onclick="preview()">▶️ Show</button>
+        <div class="shortcut">Ctrl+Enter</div>
+      </div>
+
+      <div style="margin-top:.75rem;font-size:.875rem;color:var(--muted);text-align:center;">
+               </div>
+    </div>
+  </div>
+
+  <!-- Правая панель -->
+  <div class="panel-right">
+    <div class="preview-header">
+      <h1>2. Result rendering</h1>
+      <div style="display:flex;align-items:center;gap:.5rem;font-size:.875rem;">
+        <span style="color:var(--success);"></span>      </div>
+    </div>
+
+    <div class="preview-container">
+      <div id="preview">
+        <div class="empty-state">
+          <h3>Здесь появится результат</h3>
+          <p>Вставьте LaTeX‑код в левое окно и нажмите «Предпросмотр».</p>
+          <div style="margin-top:1.5rem;font-size:2.5rem;opacity:.2;">📐</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+</div>
+
+<script>
+function preview() {
+  const input = document.getElementById('input');
+  const preview = document.getElementById('preview');
+  preview.innerHTML = ''; // очистить
+  const text = input.value.trim() || ' ';
+  preview.appendChild(document.createTextNode(text));
+
+  if (!MathJax || !MathJax.typesetPromise) {
+    preview.innerHTML = `<div style="padding:2rem;text-align:center;color:#ef4444;">
+        <h3>MathJax ещё загружается…</h3>
+        <p>Подождите пару секунд и нажмите кнопку ещё раз.</p>
+      </div>`;
+    return;
+  }
+
+  MathJax.typesetPromise([preview]).catch(err => {
+    preview.innerHTML += `<div style="margin-top:1rem;padding:.75rem;background:#fef2f2;color:${MathJax.config.error.color};border-radius:8px;font-size:.875rem;">Ошибка рендеринга. Проверьте синтаксис LaTeX.</div>`;
+    console.error(err);
+  });
+}
+
+function clearInput() {
+  const input = document.getElementById('input');
+  input.value = '';
+  input.focus();
+}
+
+function initShortcuts() {
+  const input = document.getElementById('input');
+  input.addEventListener('keydown', e => {
+    if (e.ctrlKey && e.key === 'Enter') {
+      e.preventDefault();
+      preview();
+    }
+  });
+}
+
+function loadDemo() {
+  const demo = `Пример документа с русским и английским текстом.
+Это обычный текст на русском языке. Всё отображается корректно.
+Инлайн‑формула: $E = mc^2$
+Блочная формула:
+\\[ \\int_{0}^{\\infty} e^{-x^2} \\, dx = \\frac{\\sqrt{\\pi}}{2} \\]
+Ещё одна формула:
+$$ \\sum_{k=1}^{n} k = \\frac{n(n+1)}{2} $$
+Поддержка греческих букв: $\\alpha, \\beta, \\gamma, \\delta, \\pi, \\phi$
+И всё это — в одном офлайн HTML‑файле!`;
+  document.getElementById('input').value = demo;
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  initShortcuts();
+  loadDemo();
+  setTimeout(() => preview(), 800); // первый авто‑просмотр
+});
+</script>
+</body>
+</html>
